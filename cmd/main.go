@@ -6,6 +6,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/metgag/final-assignment/internals/configs"
+	"github.com/metgag/final-assignment/internals/routers"
 )
 
 func main() {
@@ -30,4 +31,7 @@ func main() {
 		os.Getenv("PG_DB"),
 		os.Getenv("PG_USER"),
 	)
+
+	router := routers.InitRouter(dbpool)
+	router.Run(":8090")
 }
