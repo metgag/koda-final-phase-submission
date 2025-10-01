@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/metgag/final-assignment/internals/models"
 )

@@ -92,7 +92,7 @@ func (uh *UserHandler) HandleFollowUser(ctx *gin.Context) {
 		)
 		return
 	}
-
+      
 	targetUname, err := uh.ur.CreateUserFollowing(
 		ctx, user.UserID, followingId,
 	)
