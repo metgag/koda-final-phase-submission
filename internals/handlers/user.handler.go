@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -84,29 +85,105 @@ func (uh *UserHandler) HandleFollowUser(ctx *gin.Context) {
 	claims, _ := ctx.Get("claims")
 	user, _ := claims.(pkg.Claims)
 
-	var followBody models.FollowBody
-
-	if err := ctx.ShouldBindJSON(&followBody); err != nil {
+	followingId, err := strconv.Atoi(ctx.Param("followId"))
+	if err != nil {
 		utils.LogCtxError(
-			ctx, "UNABLE BIND FOLLOW BODY", "Follow body mismatch", err, http.StatusBadRequest,
+			ctx, "POST ID SHOULD BE INTEGER", "Post not found", err, http.StatusBadRequest,
 		)
 		return
 	}
-
-	ctag, err := uh.ur.CreateUserFollowing(
-		ctx, user.UserID, followBody.FollowingID,
+      
+	targetUname, err := uh.ur.CreateUserFollowing(
+		ctx, user.UserID, followingId,
 	)
 	if err != nil {
 		utils.LogCtxError(ctx, "UNABLE FOLLOW SAME USER", "User not found", err, http.StatusBadRequest)
 		return
 	}
-	if !ctag.Insert() {
-		utils.LogCtxError(ctx, "PG UNABLE TO INSERT FOLLOWING", "Internal server error", errors.New("unable to follow user"), http.StatusBadRequest)
+
+	ctx.JSON(http.StatusOK, models.NewFullfilledResponse(
+		http.StatusOK,
+		fmt.Sprintf(
+			"Succesfully following %s", targetUname,
+		),
+	))
+}
+
+func (uh *UserHandler) HandleViewFollowedPost(ctx *gin.Context) {
+	claims, _ := ctx.Get("claims")
+	user, _ := claims.(pkg.Claims)
+
+	posts, err := uh.ur.GetFollowingPost(ctx, user.UserID)
+	if err != nil {
+		utils.LogCtxError(ctx, "PG UNABLE GET POST LIST", "Internal server error", err, http.StatusInternalServerError)
+		return
+	}
+
+	if len(posts) == 0 {
+		utils.LogCtxError(
+			ctx, "NOT FOLLOWING ANY OTHER USER", "Follow any user to view post", errors.New("user have no following"), http.StatusBadRequest,
+		)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, models.NewFullfilledResponse(
 		http.StatusOK,
-		"Succesfully following user",
+		posts,
+	))
+}
+
+func (uh *UserHandler) HandleLikePost(ctx *gin.Context) {
+	claims, _ := ctx.Get("claims")
+	user, _ := claims.(pkg.Claims)
+
+	postId, err := strconv.Atoi(ctx.Param("postId"))
+	if err != nil {
+		utils.LogCtxError(
+			ctx, "POST ID SHOULD BE INTEGER", "Post not found", err, http.StatusBadRequest,
+		)
+		return
+	}
+
+	if err := uh.ur.CreatePostLike(ctx, user.UserID, postId); err != nil {
+		utils.LogCtxError(ctx, "PG UNABLE CREATE POST LIKE", "Internal server error", err, http.StatusInternalServerError)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.NewFullfilledResponse(
+		http.StatusOK,
+		fmt.Sprintf("Successfully like a post with ID, %d", postId),
+	))
+}
+
+func (uh *UserHandler) HandleCommentPost(ctx *gin.Context) {
+	claims, _ := ctx.Get("claims")
+	user, _ := claims.(pkg.Claims)
+
+	postId, err := strconv.Atoi(ctx.Param("postId"))
+	if err != nil {
+		utils.LogCtxError(
+			ctx, "POST ID SHOULD BE INTEGER", "Post not found", err, http.StatusBadRequest,
+		)
+		return
+	}
+
+	var commendBody models.CommentPostBody
+	if err := ctx.ShouldBindJSON(&commendBody); err != nil {
+		utils.LogCtxError(ctx, "COMMENT POST BODY MISMATCH", "Internal server error", err, http.StatusInternalServerError)
+		return
+	}
+
+	if err := uh.ur.CreatePostComment(
+		ctx, user.UserID, postId, commendBody.Comment,
+	); err != nil {
+		utils.LogCtxError(ctx, "PG ERROR CREATE POST COMMENT", "Post not found", err, http.StatusInternalServerError)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.NewFullfilledResponse(
+		http.StatusCreated,
+		fmt.Sprintf(
+			"Succesfully create comment to post id, %d", postId,
+		),
 	))
 }
