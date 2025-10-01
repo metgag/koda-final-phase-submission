@@ -6,10 +6,11 @@ import (
 	"github.com/metgag/final-assignment/internals/handlers"
 	"github.com/metgag/final-assignment/internals/middlewares"
 	"github.com/metgag/final-assignment/internals/repositories"
+	"github.com/redis/go-redis/v9"
 )
 
-func InitUserRouter(r *gin.Engine, dbpool *pgxpool.Pool) {
-	ur := repositories.NewUserRepository(dbpool)
+func InitUserRouter(r *gin.Engine, dbpool *pgxpool.Pool, rdb *redis.Client) {
+	ur := repositories.NewUserRepository(dbpool, rdb)
 	uh := handlers.NewUserHandler(ur)
 
 	userGroup := r.Group("user", middlewares.ValidateToken)
