@@ -9,6 +9,7 @@ func InitRouter(p *pgxpool.Pool) *gin.Engine {
 	r := gin.Default()
 
 	InitAuthRouter(r, p)
+	InitUserRouter(r, p)
 
 	return r
 }
