@@ -11,3 +11,8 @@ migrate-up:
 
 migrate-down:
 	migrate -database $(DBURL) -path $(MIGRATIONPATH) down $(s)
+
+seed:
+	for file in $(SEEDSPATH)/*.sql; do \
+		psql $(DBURL) -f $$file; \
+	done
