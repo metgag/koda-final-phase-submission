@@ -1,0 +1,7 @@
+INSERT INTO profiles (user_id,username,avatar,bio,created_at,updated_at) VALUES
+	 (4,'tatang242',NULL,NULL,'2025-10-01 00:54:47.156225+07',NULL),
+	 (5,'tatang24',NULL,NULL,'2025-10-01 00:55:43.708684+07',NULL),
+	 (7,'tatang244',NULL,NULL,'2025-10-01 07:10:31.706781+07',NULL),
+	 (12,'user1',NULL,NULL,'2025-10-01 13:41:38.377248+07',NULL),
+	 (13,'user2',NULL,NULL,'2025-10-01 13:50:16.228337+07',NULL),
+	 (14,'user3',NULL,NULL,'2025-10-01 14:08:20.846272+07',NULL);
