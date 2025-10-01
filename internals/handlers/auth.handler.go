@@ -68,7 +68,7 @@ func (ah *AuthHandler) HandleLogin(ctx *gin.Context) {
 		return
 	}
 
-	getHashPwd, err := ah.ar.LoginUser(ctx, loginBody.Email)
+	loginScan, err := ah.ar.LoginUser(ctx, loginBody.Email)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			utils.LogCtxError(
@@ -85,7 +85,7 @@ func (ah *AuthHandler) HandleLogin(ctx *gin.Context) {
 	hash := pkg.NewHashConfig()
 	hash.UseRecommended()
 
-	isMatch, err := hash.ComparePasswordAndHash(loginBody.Password, getHashPwd)
+	isMatch, err := hash.ComparePasswordAndHash(loginBody.Password, loginScan.HashPwd)
 	if err != nil {
 		utils.LogCtxError(
 			ctx, "UNABLE TO HASH LOGIN PASSWORD", "Internal server error", err, http.StatusInternalServerError,
@@ -99,8 +99,20 @@ func (ah *AuthHandler) HandleLogin(ctx *gin.Context) {
 		return
 	}
 
+	claims := pkg.NewJWTClaims(loginScan.UID)
+	token, err := claims.GenToken()
+	if err != nil {
+		utils.LogCtxError(
+			ctx, "UNABLE GENERATE LOGIN ACCESS TOKEN", "Internal server error", err, http.StatusInternalServerError,
+		)
+		return
+	}
+
 	ctx.JSON(http.StatusOK, models.NewFullfilledResponse(
 		http.StatusOK,
-		"Logged in succesfully",
+		models.LoginResponse{
+			Message: "Logged in succesfully",
+			Token:   token,
+		},
 	))
 }
