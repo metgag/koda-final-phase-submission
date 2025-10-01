@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/metgag/final-assignment/internals/models"
 )
@@ -65,4 +66,19 @@ func (ur *UserRepository) CreateUserPost(
 	}
 
 	return "Create post succesfully", nil
+}
+
+func (ur *UserRepository) CreateUserFollowing(
+	ctx context.Context,
+	currUserId,
+	targetUserid int,
+) (pgconn.CommandTag, error) {
+	sql := `
+		INSERT INTO
+			follows(user_id, following_id)
+		VALUES
+			($1, $2)
+	`
+
+	return ur.dbpool.Exec(ctx, sql, currUserId, targetUserid)
 }
