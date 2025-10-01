@@ -5,6 +5,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/metgag/final-assignment/internals/models"
 )
 
 type AuthRepository struct {
@@ -63,17 +64,20 @@ func (ar *AuthRepository) initUserProfile(tx pgx.Tx, ctx context.Context, uid in
 	return regisUname, nil
 }
 
-func (ar *AuthRepository) LoginUser(ctx context.Context, email string) (hashPwd string, err error) {
+func (ar *AuthRepository) LoginUser(ctx context.Context, email string) (models.LoginScan, error) {
 	sql := `
-		SELECT password
+		SELECT user_id, password
 		FROM accounts
 		WHERE email = $1
 	`
 
-	var getHash string
-	if err := ar.dbpool.QueryRow(ctx, sql, email).Scan(&getHash); err != nil {
-		return "", err
+	var loginScan models.LoginScan
+	if err := ar.dbpool.QueryRow(ctx, sql, email).Scan(
+		&loginScan.UID,
+		&loginScan.HashPwd,
+	); err != nil {
+		return models.LoginScan{}, err
 	}
 
-	return getHash, nil
+	return loginScan, nil
 }
