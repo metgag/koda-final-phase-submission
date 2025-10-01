@@ -14,6 +14,7 @@ type LoginBody struct {
 type LoginScan struct {
 	UID     int
 	HashPwd string
+	Uname   string
 }
 
 type LoginResponse struct {

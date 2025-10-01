@@ -111,8 +111,10 @@ func (ah *AuthHandler) HandleLogin(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, models.NewFullfilledResponse(
 		http.StatusOK,
 		models.LoginResponse{
-			Message: "Logged in succesfully",
-			Token:   token,
+			Message: fmt.Sprintf(
+				"Logged in as %s", loginScan.Uname,
+			),
+			Token: token,
 		},
 	))
 }

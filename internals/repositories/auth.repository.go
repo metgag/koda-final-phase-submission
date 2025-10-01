@@ -66,8 +66,10 @@ func (ar *AuthRepository) initUserProfile(tx pgx.Tx, ctx context.Context, uid in
 
 func (ar *AuthRepository) LoginUser(ctx context.Context, email string) (models.LoginScan, error) {
 	sql := `
-		SELECT user_id, password
-		FROM accounts
+		SELECT a.user_id, a.password, p.username
+		FROM accounts a
+		JOIN profiles p ON 
+			p.user_id = a.user_id
 		WHERE email = $1
 	`
 
@@ -75,6 +77,7 @@ func (ar *AuthRepository) LoginUser(ctx context.Context, email string) (models.L
 	if err := ar.dbpool.QueryRow(ctx, sql, email).Scan(
 		&loginScan.UID,
 		&loginScan.HashPwd,
+		&loginScan.Uname,
 	); err != nil {
 		return models.LoginScan{}, err
 	}
