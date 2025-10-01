@@ -2,20 +2,28 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/metgag/final-assignment/internals/models"
+	"github.com/redis/go-redis/v9"
 )
 
 type UserRepository struct {
 	dbpool *pgxpool.Pool
+	rdb    *redis.Client
 }
 
-func NewUserRepository(dbpool *pgxpool.Pool) *UserRepository {
-	return &UserRepository{dbpool: dbpool}
+func NewUserRepository(dbpool *pgxpool.Pool, rdb *redis.Client) *UserRepository {
+	return &UserRepository{
+		dbpool: dbpool,
+		rdb:    rdb,
+	}
 }
 
 func (ur *UserRepository) CreateUserPost(
@@ -107,6 +115,25 @@ func (ur *UserRepository) GetFollowingPost(
 	ctx context.Context,
 	currUserId int,
 ) ([]models.Post, error) {
+	redisKey := "social:following_post"
+	val, err := ur.rdb.Get(ctx, redisKey).Result()
+	if err == redis.Nil {
+		log.Printf("redis> key %s does not exist", redisKey)
+	}
+	if err != nil {
+		log.Printf("redis> error %s", err.Error())
+	}
+
+	var cachedPosts []models.Post
+	if err := json.Unmarshal([]byte(val), &cachedPosts); err != nil {
+		log.Printf("redis> unmarshal error %s", err.Error())
+	}
+
+	if len(cachedPosts) > 0 {
+		log.Printf("redis> cache %s hit", redisKey)
+		return cachedPosts, nil
+	}
+
 	sql := `
 		SELECT p.post_id, p.body, p.image, p.user_id, pr.username, p.created_at
 		FROM follows f
@@ -144,6 +171,16 @@ func (ur *UserRepository) GetFollowingPost(
 		posts = append(posts, post)
 	}
 
+	jsonData, err := json.Marshal(posts)
+	if err != nil {
+		log.Printf("redis> error marshal %s", err)
+	}
+	expiration := 120 * time.Minute
+	if err := ur.rdb.Set(ctx, redisKey, jsonData, expiration).Err(); err != nil {
+		log.Printf("redis> unable to set %s %s", redisKey, err)
+	}
+
+	log.Printf("redis> cache %s set", redisKey)
 	return posts, nil
 }
 
