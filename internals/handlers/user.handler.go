@@ -79,3 +79,34 @@ func (uh *UserHandler) HandleCreatePost(ctx *gin.Context) {
 		result,
 	))
 }
+
+func (uh *UserHandler) HandleFollowUser(ctx *gin.Context) {
+	claims, _ := ctx.Get("claims")
+	user, _ := claims.(pkg.Claims)
+
+	var followBody models.FollowBody
+
+	if err := ctx.ShouldBindJSON(&followBody); err != nil {
+		utils.LogCtxError(
+			ctx, "UNABLE BIND FOLLOW BODY", "Follow body mismatch", err, http.StatusBadRequest,
+		)
+		return
+	}
+
+	ctag, err := uh.ur.CreateUserFollowing(
+		ctx, user.UserID, followBody.FollowingID,
+	)
+	if err != nil {
+		utils.LogCtxError(ctx, "UNABLE FOLLOW SAME USER", "User not found", err, http.StatusBadRequest)
+		return
+	}
+	if !ctag.Insert() {
+		utils.LogCtxError(ctx, "PG UNABLE TO INSERT FOLLOWING", "Internal server error", errors.New("unable to follow user"), http.StatusBadRequest)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, models.NewFullfilledResponse(
+		http.StatusOK,
+		"Succesfully following user",
+	))
+}

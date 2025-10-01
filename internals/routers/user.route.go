@@ -15,5 +15,6 @@ func InitUserRouter(r *gin.Engine, dbpool *pgxpool.Pool) {
 	userGroup := r.Group("user", middlewares.ValidateToken)
 	{
 		userGroup.POST("/post", uh.HandleCreatePost)
+		userGroup.POST("/follow", uh.HandleFollowUser)
 	}
 }
