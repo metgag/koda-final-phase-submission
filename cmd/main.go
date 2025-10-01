@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -32,6 +33,13 @@ func main() {
 		os.Getenv("PG_USER"),
 	)
 
-	router := routers.InitRouter(dbpool)
+	rdb := configs.InitRedis()
+	if err := rdb.Ping(context.Background()).Err(); err != nil {
+		log.Println("unable to connect to redis server")
+	} else {
+		log.Println("redis> PONG")
+	}
+
+	router := routers.InitRouter(dbpool, rdb)
 	router.Run(":8090")
 }
