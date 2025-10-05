@@ -21,3 +21,4 @@ type Post struct {
 
 type CommentPostBody struct {
 	Comment string `json:"comment"`
+}
